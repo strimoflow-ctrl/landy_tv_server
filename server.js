@@ -32,18 +32,18 @@ function extractVideosFromPanel($, panelSelector) {
 app.get('/api/trending', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const url = page === 1 ? 'https://lalamasa.com/' : `https://lalamasa.com/page/${page}/`;
-    
+
     try {
         const response = await axios.get(url, { headers });
         const $ = cheerio.load(response.data);
-        
+
         let videos = [];
-        
+
         if (page === 1) {
             // First, get "Trending Today" videos
             const trending = extractVideosFromPanel($, '.vt-tab-panel[data-panel="day"]');
             videos = videos.concat(trending);
-            
+
             // Then, get some "Latest" videos from the rest of the homepage so we have a good initial list
             $('.vt-grid').each((i, grid) => {
                 if (!$(grid).closest('.vt-tab-panel').length) {
@@ -58,7 +58,7 @@ app.get('/api/trending', async (req, res) => {
             });
             // Fallback
             if (videos.length === 0) {
-                 videos = extractVideosFromPanel($, '.vt-grid:last-of-type'); 
+                videos = extractVideosFromPanel($, '.vt-grid:last-of-type');
             }
         } else {
             // Page 2 onwards, just extract everything from the body (which is the next page of Latest)
@@ -77,7 +77,7 @@ app.get('/api/trending', async (req, res) => {
 app.get('/api/category', async (req, res) => {
     let categoryUrl = req.query.url;
     const page = req.query.page || 1;
-    
+
     if (!categoryUrl) {
         return res.status(400).json({ success: false, error: 'Missing category url parameter' });
     }
@@ -89,12 +89,12 @@ app.get('/api/category', async (req, res) => {
     try {
         const response = await axios.get(categoryUrl, { headers });
         const $ = cheerio.load(response.data);
-        const videos = extractVideosFromPanel($, 'body'); 
+        const videos = extractVideosFromPanel($, 'body');
 
         res.json({ success: true, count: videos.length, data: videos });
     } catch (error) {
         console.error('Error fetching category:', error.message);
-        res.status(200).json({ success: true, data: [] }); 
+        res.status(200).json({ success: true, data: [] });
     }
 });
 
@@ -109,7 +109,7 @@ app.get('/api/video-source', async (req, res) => {
     try {
         const response = await axios.get(videoUrl, { headers });
         const $ = cheerio.load(response.data);
-        
+
         let videoSource = '';
         const sourceElement = $('#video-id source');
         if (sourceElement.length > 0) {
@@ -123,7 +123,7 @@ app.get('/api/video-source', async (req, res) => {
                     if (json['@type'] === 'VideoObject' && json.contentUrl) {
                         videoSource = json.contentUrl;
                     }
-                } catch (e) {}
+                } catch (e) { }
             });
         }
 
@@ -142,7 +142,7 @@ app.get('/api/video-source', async (req, res) => {
 // 4. Get related videos from a specific video page
 app.get('/api/related', async (req, res) => {
     const videoUrl = req.query.url;
-    
+
     if (!videoUrl) {
         return res.status(400).json({ success: false, error: 'Missing video url parameter' });
     }
@@ -150,11 +150,11 @@ app.get('/api/related', async (req, res) => {
     try {
         const response = await axios.get(videoUrl, { headers });
         const $ = cheerio.load(response.data);
-        
+
         // Milti-julti videos (Related videos usually have vt-card class on video pages)
         // We will exclude the main video if it appears in the list
         let related = extractVideosFromPanel($, 'body');
-        
+
         // Remove exact match of current video if present in related
         related = related.filter(v => v.url !== videoUrl && !v.url.endsWith(videoUrl));
 
@@ -172,12 +172,12 @@ app.listen(PORT, () => {
 // ==========================================
 // TELEGRAM BOT INTEGRATION
 // ==========================================
-const TelegramBotObj = require('node-telegram-bot-api');
-const TelegramBot = TelegramBotObj.default || TelegramBotObj;
+const tb = require('node-telegram-bot-api');
+const TelegramBot = tb.TelegramBot || tb.default || tb;
 
 // Setup your variables in Railway environment
-const BOT_TOKEN = process.env.BOT_TOKEN; 
-const WEB_APP_URL = process.env.WEB_APP_URL || 'https://your-netlify-url.netlify.app';
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const WEB_APP_URL = process.env.WEB_APP_URL;
 
 if (BOT_TOKEN) {
     const bot = new TelegramBot(BOT_TOKEN, { polling: true });
@@ -187,7 +187,7 @@ if (BOT_TOKEN) {
         const startParam = match[1] ? match[1].trim() : '';
 
         const welcomeMessage = `Welcome to **Landy TV**! 🍿\n\nEnjoy streaming your favorite premium videos directly inside Telegram.\n\nClick the button below to start watching!`;
-        
+
         let finalUrl = WEB_APP_URL;
         if (startParam) {
             // Append the base64 encoded video url back so the webapp can read it
