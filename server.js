@@ -168,3 +168,44 @@ app.get('/api/related', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`Backend server is running on http://localhost:${PORT}`);
 });
+
+// ==========================================
+// TELEGRAM BOT INTEGRATION
+// ==========================================
+const TelegramBot = require('node-telegram-bot-api');
+
+// Setup your variables in Railway environment
+const BOT_TOKEN = process.env.BOT_TOKEN; 
+const WEB_APP_URL = process.env.WEB_APP_URL || 'https://your-netlify-url.netlify.app';
+
+if (BOT_TOKEN) {
+    const bot = new TelegramBot(BOT_TOKEN, { polling: true });
+
+    bot.onText(/\/start(.*)/, (msg, match) => {
+        const chatId = msg.chat.id;
+        const startParam = match[1] ? match[1].trim() : '';
+
+        const welcomeMessage = `Welcome to **Landy TV**! 🍿\n\nEnjoy streaming your favorite premium videos directly inside Telegram.\n\nClick the button below to start watching!`;
+        
+        let finalUrl = WEB_APP_URL;
+        if (startParam) {
+            // Append the base64 encoded video url back so the webapp can read it
+            finalUrl = `${WEB_APP_URL}?start=${startParam}`;
+        }
+
+        const opts = {
+            parse_mode: 'Markdown',
+            reply_markup: {
+                inline_keyboard: [
+                    [{ text: "▶️ Watch Now", web_app: { url: finalUrl } }]
+                ]
+            }
+        };
+
+        bot.sendMessage(chatId, welcomeMessage, opts).catch(err => console.error("Bot send message error:", err));
+    });
+
+    console.log("Telegram Bot is running...");
+} else {
+    console.log("No BOT_TOKEN found in environment. Telegram Bot is disabled.");
+}
