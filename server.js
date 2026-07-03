@@ -172,7 +172,8 @@ app.listen(PORT, () => {
 // ==========================================
 // TELEGRAM BOT INTEGRATION
 // ==========================================
-const TelegramBot = require('node-telegram-bot-api');
+const TelegramBotObj = require('node-telegram-bot-api');
+const TelegramBot = TelegramBotObj.default || TelegramBotObj;
 
 // Setup your variables in Railway environment
 const BOT_TOKEN = process.env.BOT_TOKEN; 
